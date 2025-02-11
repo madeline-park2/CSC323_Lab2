@@ -5,8 +5,7 @@ import random
 
 def pad(msg):
     
-    # Convert to bytes
-    msg_bytes = msg.encode("utf-8")
+    raw_bytes = base64.b64decode(msg)
 
     # Calculate pad length
     padding_length = 16 - (len(msg) % 16)
@@ -15,17 +14,11 @@ def pad(msg):
     padding_buffer = bytes([padding_length for _ in range(padding_length)])
 
     # Concatenates it to plaintext
-    msg_bytes += padding_buffer
+    raw_bytes += padding_buffer
 
-    print(msg_bytes)
+    original_form = base64.b64encode(raw_bytes).decode("utf-8")
 
-    return
-
-def unpad(msg):
-
-    if len(msg) % 16 != 0:
-        raise Exception("Plaintext has invalid padding")
-    
+    return original_form
 
 
-pad("1234567890")
+pad("1234567890ab")
