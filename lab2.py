@@ -5,8 +5,6 @@ import random
 
 def pad(msg):
     
-    raw_bytes = base64.b64decode(msg)
-
     # Calculate pad length
     padding_length = 16 - (len(msg) % 16)
     
@@ -14,27 +12,31 @@ def pad(msg):
     padding_buffer = bytes([padding_length for _ in range(padding_length)])
 
     # Concatenates it to plaintext
-    raw_bytes += padding_buffer
+    msg += padding_buffer
     #print(raw_bytes)
 
-    original_form = base64.b64encode(raw_bytes).decode("utf-8")
+    original_form = base64.b64encode(msg).decode("utf-8")
 
     return original_form
 
 
-t = pad("1234567890ab")
+t = pad(b'1234567812345678123456781234121')
 
 def unpad(msg):
     # get last byte, figure out its value
     # this value is the same size as number of bytes padded
     raw_bytes = base64.b64decode(msg)
     print(raw_bytes)
+    print(len(raw_bytes))
+    # check if string is multiple of blocksize
+    if (len(raw_bytes) % 16 != 0):
+        raise Exception("Length is not a multiple of blocksize.")
     last = raw_bytes[-1:]
     dec = int.from_bytes(last)
     # IF THAT IS NOT TRUE: error
-    if (not raw_bytes.count(last) == dec):
-        raise Exception("Number of padded blocks does not match padding value.")
-    # else return msg - padding
+    for i in range(dec, 0, -1):
+        if (raw_bytes[-dec].to_bytes(1) != last):
+            raise Exception("Number of padded blocks does not match padding value.")
     return raw_bytes[:-dec]
 
 print(t)
