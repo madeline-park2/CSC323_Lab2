@@ -3,13 +3,13 @@ import datetime
 import time
 import random
 
-def pad(msg, blockSize):
+def pad(msg):
     
     # Convert to bytes
     msg_bytes = msg.encode("utf-8")
 
     # Calculate pad length
-    padding_length = blockSize - (len(msg) % blockSize)
+    padding_length = 16 - (len(msg) % 16)
     
     # Makes a list in the form [2, 2] or [3, 3, 3] or [4, 4, 4, 4], etc
     padding_buffer = bytes([padding_length for _ in range(padding_length)])
@@ -21,4 +21,11 @@ def pad(msg, blockSize):
 
     return
 
-pad("1234567890", 5)
+def unpad(msg):
+
+    if len(msg) % 16 != 0:
+        raise Exception("Plaintext has invalid padding")
+    
+
+
+pad("1234567890")
