@@ -34,6 +34,7 @@ def unpad(msg):
         raise Exception("Length is not a multiple of blocksize.")
     last = raw_bytes[-1:]
     dec = int.from_bytes(last, byteorder="big")
+    dec = int.from_bytes(last, "big")
     # IF THAT IS NOT TRUE: error
     for i in range(dec, 0, -1):
         if (raw_bytes[-dec].to_bytes(1, byteorder="big") != last):
