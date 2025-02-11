@@ -27,13 +27,14 @@ def unpad(msg):
     # get last byte, figure out its value
     # this value is the same size as number of bytes padded
     raw_bytes = base64.b64decode(msg)
-    print(raw_bytes)
-    print(len(raw_bytes))
+    #print(raw_bytes)
+    #print(len(raw_bytes))
     # check if string is multiple of blocksize
     if (len(raw_bytes) % 16 != 0):
         raise Exception("Length is not a multiple of blocksize.")
     last = raw_bytes[-1:]
     dec = int.from_bytes(last, byteorder="big")
+    dec = int.from_bytes(last, "big")
     # IF THAT IS NOT TRUE: error
     for i in range(dec, 0, -1):
         if (raw_bytes[-dec].to_bytes(1, byteorder="big") != last):
