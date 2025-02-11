@@ -10,10 +10,6 @@ def pad(msg, blockSize):
 
     # Calculate pad length
     padding_length = blockSize - (len(msg) % blockSize)
-
-    if padding_length == blockSize:
-        # Add an entire block
-        return
     
     # Makes a list in the form [2, 2] or [3, 3, 3] or [4, 4, 4, 4], etc
     padding_buffer = bytes([padding_length for _ in range(padding_length)])
@@ -25,4 +21,4 @@ def pad(msg, blockSize):
 
     return
 
-pad("1234567890", 3)
+pad("1234567890", 5)
