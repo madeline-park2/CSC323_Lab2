@@ -14,32 +14,27 @@ def pad(msg):
 
     # Concatenates it to plaintext
     msg += padding_buffer
-    #print(raw_bytes)
 
-    original_form = base64.b64encode(msg).decode("utf-8")
-
-    return original_form
+    #original_form = base64.b64encode(msg)
+    return msg
 
 
-t = pad(b'1234567812345678123456781234121')
+t = pad(b'123456781234567812345678123412')
 
 def unpad(msg):
     # get last byte, figure out its value
     # this value is the same size as number of bytes padded
-    raw_bytes = base64.b64decode(msg)
-    #print(raw_bytes)
-    #print(len(raw_bytes))
     # check if string is multiple of blocksize
-    if (len(raw_bytes) % 16 != 0):
+    if (len(msg) % 16 != 0):
         raise Exception("Length is not a multiple of blocksize.")
-    last = raw_bytes[-1:]
+    last = msg[-1:]
     dec = int.from_bytes(last, byteorder="big")
     dec = int.from_bytes(last, "big")
     # IF THAT IS NOT TRUE: error
     for i in range(dec, 0, -1):
-        if (raw_bytes[-dec].to_bytes(1, byteorder="big") != last):
+        if (msg[-dec].to_bytes(1, byteorder="big") != last):
             raise Exception("Number of padded blocks does not match padding value.")
-    return raw_bytes[:-dec]
+    return msg[:-dec]
 
 print(t)
 print(unpad(t))
@@ -47,17 +42,34 @@ print(unpad(t))
 
 def ecb_encrypt(msg, key):
 
-    if len(key) != 16:
+    if len(key) != 16:  # 16 bytes -> 128 bits
         raise Exception("Invalid key length")
     
     padded_msg = pad(msg)
 
-    formatted = base64.b64decode(padded_msg)
+    #formatted = base64.b64decode(padded_msg)
 
     encrypted = AES.new(key, AES.MODE_ECB)
 
-    final = encrypted.encrypt(formatted)
+    final = encrypted.encrypt(padded_msg)
 
     return final
 
+def ecb_decrypt(msg, key):
+    # should error on ciphertext is not multiple of blocksize
+    # and unpadding returns error
+    # these should both be caught in unpad
+    encrypted = AES.new(key, AES.MODE_ECB)
+    formatted = base64.b64decode(msg)
+    padded_msg = encrypted.decrypt(formatted)
+    final = unpad(padded_msg)
+
+    return final
+
+# Testing ECB Encrypt:
 print(ecb_encrypt(b'1234567890ab', b'1234567890abcdef'))
+
+# Testing ECB Decrypt:
+f = open("Lab2.TaskII.A.txt", "r")
+text = f.read()
+print(ecb_decrypt(text, b'CALIFORNIA LOVE!'))
