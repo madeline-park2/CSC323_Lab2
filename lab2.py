@@ -4,6 +4,10 @@ import time
 import random
 from Crypto.Cipher import AES
 
+# Tyler Brady and Madeline Park, Lab 2
+
+### Task I: Padding for Block Ciphers
+
 def pad(msg):
     
     # Calculate pad length
@@ -39,6 +43,9 @@ def unpad(msg):
 print(t)
 print(unpad(t))
 
+### Task II: ECB Mode
+
+# Implement ECB Mode
 
 def ecb_encrypt(msg, key):
 
@@ -58,9 +65,10 @@ def ecb_encrypt(msg, key):
 def ecb_decrypt(msg, key):
     # should error on ciphertext is not multiple of blocksize
     # and unpadding returns error
-    # these should both be caught in unpad
     encrypted = AES.new(key, AES.MODE_ECB)
     formatted = base64.b64decode(msg)
+    if (len(formatted) % 16 != 0):    # also caught in unpad so maybe extra?
+        raise Exception("Length is not a multiple of blocksize.")
     padded_msg = encrypted.decrypt(formatted)
     final = unpad(padded_msg)
 
@@ -73,3 +81,9 @@ print(ecb_encrypt(b'1234567890ab', b'1234567890abcdef'))
 f = open("Lab2.TaskII.A.txt", "r")
 text = f.read()
 print(ecb_decrypt(text, b'CALIFORNIA LOVE!'))
+
+# Identify ECB Mode
+
+# ECB Cookies
+
+### Task III: CBC Mode
