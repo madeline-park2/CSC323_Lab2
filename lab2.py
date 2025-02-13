@@ -97,8 +97,9 @@ def is_ecb(msg):
     k = 16
     after_header = 54
     chunks = [msg[i:i+k] for i in range(after_header, len(msg), k)]
-    if (chunks[0] in chunks[1:]):
-        return msg
+    for i in range(len(chunks)):
+        if (chunks[i] in chunks[i + 1:]):
+            return msg
     return None
 
 # Testing for is_ecb
