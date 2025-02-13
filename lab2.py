@@ -1,4 +1,5 @@
 import base64
+import binascii
 import datetime
 import time
 import random
@@ -23,8 +24,6 @@ def pad(msg):
     return msg
 
 
-t = pad(b'123456781234567812345678123412')
-
 def unpad(msg):
     # get last byte, figure out its value
     # this value is the same size as number of bytes padded
@@ -40,6 +39,8 @@ def unpad(msg):
             raise Exception("Number of padded blocks does not match padding value.")
     return msg[:-dec]
 
+# Testing pad and unpad
+t = pad(b'123456781234567812345678123412')
 print(t)
 print(unpad(t))
 
@@ -83,6 +84,32 @@ text = f.read()
 print(ecb_decrypt(text, b'CALIFORNIA LOVE!'))
 
 # Identify ECB Mode
+
+def hex_to_bytes(h):
+    return binascii.unhexlify(h)
+    
+def is_ecb(msg):
+    #print(msg)
+    # check for repeating blocks
+    # each block is 16 bytes, so separate into 16s
+    # then check if repeating
+    # if not, move on
+    k = 16
+    after_header = 54
+    chunks = [msg[i:i+k] for i in range(after_header, len(msg), k)]
+    if (chunks[0] in chunks[1:]):
+        return msg
+    return None
+
+# Testing for is_ecb
+f = open("Lab2.TaskII.B.txt", "r")
+for i in range(100):
+    text = f.readline().strip()
+    byte_text = hex_to_bytes(text)
+    if (is_ecb(byte_text) is not None):
+        with open("TaskII.B.image.png", "wb") as binary_file:
+            binary_file.write(byte_text)
+
 
 # ECB Cookies
 
