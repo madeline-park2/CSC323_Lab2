@@ -117,7 +117,6 @@ for i in range(100):
 
 # ECB Cookies
 
-
 #/  
 # So assuming that the "role=user" is in the Plaintext block 2,
 # we get that through P2 = D(C2) xor C1
@@ -177,17 +176,42 @@ def cbc_encrypt(msg, key, iv):
         encrypted = AES.new(key, AES.MODE_ECB)
         # xor iv with m0, encrypt with key,
         # xor next block with c0, encrypt with key, etc.
-        ci = encrypted.encrypt(bytes(x ^ y for x,y in zip(msg_blocks[i], cipher_blocks[i])))
+        ci = encrypted.encrypt(xor_bytes(msg_blocks[i], cipher_blocks[i]))
         cipher_blocks.append(ci)
     
-    final = b''.join(cipher_blocks[1:])
+    final = b''.join(cipher_blocks) # ** ask if IV should be returned here
     return final
 
 
-def cbc_decrypt(msg, key, iv):
-    pass
+def cbc_decrypt(ct, key, iv):
+    k =  16
+    encrypted = AES.new(key, AES.MODE_ECB)
+    formatted = base64.b64decode(ct)
+    msg_lst = []
+    if (len(formatted) % 16 != 0):    # also caught in unpad so maybe extra?
+        raise Exception("Length is not a multiple of blocksize.")
+    ct_blocks = [formatted[i:i+k] for i in range(0, len(formatted), k)]
+    ct_blocks.insert(0, iv)
+    for i in range(len(ct_blocks) - 1, 0, -1): # so that we can go backwards
+        padded_msg = encrypted.decrypt(ct_blocks[i])
+        msg = xor_bytes(padded_msg, ct_blocks[i - 1])
+        msg_lst.insert(0, msg)
+    final_msg = b''.join(msg_lst[1:])
+
+    final = unpad(final_msg)
+    return final
+    
 
 # Testing CBC Encrypt
-print(cbc_encrypt(b'hello', b'thisisanivplease', b'aesEncryptionKey'))
+print(base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')))
 
 # Testing CBC Decrypt
+print(cbc_decrypt(base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')),
+                  b'aesEncryptionKey',
+                  b'thisisanivplease'))
+
+f = open("Lab2.TaskIII.A.txt", "r")
+
+text = f.read()
+print(cbc_decrypt(text, b'MIND ON MY MONEY', b'MONEY ON MY MIND'))
+
