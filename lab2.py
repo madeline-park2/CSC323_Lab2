@@ -117,7 +117,6 @@ for i in range(100):
 
 # ECB Cookies
 
-
 #/  
 # So assuming that the "role=user" is in the Plaintext block 2,
 # we get that through P2 = D(C2) xor C1
@@ -161,3 +160,56 @@ modified_cookie_hex = modified_cookie.hex()
 print(f"Modified Cookie: {modified_cookie_hex}")
 
 ### Task III: CBC Mode
+# takes an arbitrary length plaintext, 
+# a key, and an initialization vector,
+# then pads the message
+# then encrypts the message and returns the ciphertext
+def cbc_encrypt(msg, key, iv):
+    # pad the message
+    padded_msg = pad(msg)
+    k = 16  # block length
+    msg_blocks = [padded_msg[i:i+k] for i in range(0, len(padded_msg), k)]
+    cipher_blocks = []
+    cipher_blocks.insert(0, iv)
+    # encrypt the message
+    for i in range(len(msg_blocks)):
+        encrypted = AES.new(key, AES.MODE_ECB)
+        # xor iv with m0, encrypt with key,
+        # xor next block with c0, encrypt with key, etc.
+        ci = encrypted.encrypt(xor_bytes(msg_blocks[i], cipher_blocks[i]))
+        cipher_blocks.append(ci)
+    
+    final = b''.join(cipher_blocks)
+    return final
+
+
+def cbc_decrypt(ct, key):
+    k =  16
+    encrypted = AES.new(key, AES.MODE_ECB)
+    formatted = base64.b64decode(ct)
+    msg_lst = []
+    if (len(formatted) % 16 != 0):    # also caught in unpad so maybe extra?
+        raise Exception("Length is not a multiple of blocksize.")
+    ct_blocks = [formatted[i:i+k] for i in range(0, len(formatted), k)]
+    for i in range(len(ct_blocks) - 1, 0, -1): # so that we can go backwards
+        padded_msg = encrypted.decrypt(ct_blocks[i])
+        msg = xor_bytes(padded_msg, ct_blocks[i - 1])
+        msg_lst.insert(0, msg)
+    final_msg = b''.join(msg_lst)
+
+    final = unpad(final_msg)
+    return final
+    
+
+# Testing CBC Encrypt
+print(base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')))
+
+# Testing CBC Decrypt
+print(cbc_decrypt(base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')),
+                  b'aesEncryptionKey'))
+
+f = open("Lab2.TaskIII.A.txt", "r")
+
+text = f.read()
+print(cbc_decrypt(text, b'MIND ON MY MONEY'))
+
