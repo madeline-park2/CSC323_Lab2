@@ -115,3 +115,33 @@ for i in range(100):
 # ECB Cookies
 
 ### Task III: CBC Mode
+# takes an arbitrary length plaintext, 
+# a key, and an initialization vector,
+# then pads the message
+# then encrypts the message and returns the ciphertext
+def cbc_encrypt(msg, key, iv):
+    # pad the message
+    padded_msg = pad(msg)
+    k = 16  # block length
+    msg_blocks = [padded_msg[i:i+k] for i in range(0, len(padded_msg), k)]
+    cipher_blocks = []
+    cipher_blocks.insert(0, iv)
+    # encrypt the message
+    for i in range(len(msg_blocks)):
+        encrypted = AES.new(key, AES.MODE_CBC)
+        # xor iv with m0, encrypt with key,
+        # xor next block with c0, encrypt with key, etc.
+        ci = encrypted.encrypt(bytes(x ^ y for x,y in zip(msg_blocks[i], cipher_blocks[i])))
+        cipher_blocks.append(ci)
+    
+    final = b''.join(cipher_blocks[1:])
+    return final
+
+
+def cbc_decrypt(msg, key, iv):
+    pass
+
+# Testing CBC Encrypt
+print(cbc_encrypt(b'hello', b'thisisanivplease', b'aesEncryptionKey'))
+
+# Testing CBC Decrypt
