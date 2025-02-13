@@ -134,26 +134,38 @@ for i in range(100):
 # so we basically want to xor C1 with the mask
 # /# 
 
+# user=USERNAMEBBB|BBBBBBBBBB&uid=2|&role=ROLE
+# USERNAMEBB&BBBBBBBB
+# USERNAMEBBBBBBBBBBBBB
+
 # this is an example token generated from my login
-new_token = "b55dd1cc46a08caf50950e295ca1eff85ace0d3db32dda85ff7b9868e2e8c54650205b3a6539299000fb871d6acaa54f"
+new_token = "0044eb960fb4aa06eb045f881e0120d18594446d9689aed28b540f813009ded3c74cfd4c79bb47af505fc4627555f2e26667079a02113f9ffbddf62160a13581"
 
 new_auth = bytes.fromhex(new_token)
 
 # break it into blocks
 blocks = [new_auth[i:i + 16] for i in range(0, len(new_auth), 16)]
-
+print(blocks)
 # get the mask
 mask = xor_bytes(b'user', b'admin')
 
 # make the block we want a mutable byte array 
-mod_block = bytearray(blocks[0])
+mod_block = bytearray(blocks[2])
+second_mod_block = bytearray(blocks[0])
+# last_symbol = xor_bytes(second_mod_block[-1], b'B')
+
+
+second_mod_block[-1] ^= ord('B')
+second_mod_block[-1] ^= ord('&')
+blocks[0] = bytes(second_mod_block)
+
 
 # Apply the mask - I think we start at index 9 but not sure...
 for i in range(len(mask)):
-    mod_block[9 + i] ^= mask[i]
+    mod_block[i + 6] ^= mask[i]
 
 # Replace the block
-blocks[0] = bytes(mod_block)
+blocks[2] = bytes(mod_block)
 
 modified_cookie = b"".join(blocks)
 
