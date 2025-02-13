@@ -7,6 +7,14 @@ from Crypto.Cipher import AES
 
 # Tyler Brady and Madeline Park, Lab 2
 
+### All Helper Functions
+
+def hex_to_bytes(h):
+    return binascii.unhexlify(h)
+
+def xor_bytes(a, b):
+    return bytes(x ^ y for x, y in zip(a, b))
+
 ### Task I: Padding for Block Ciphers
 
 def pad(msg):
@@ -85,9 +93,6 @@ print(ecb_decrypt(text, b'CALIFORNIA LOVE!'))
 
 # Identify ECB Mode
 
-def hex_to_bytes(h):
-    return binascii.unhexlify(h)
-    
 def is_ecb(msg):
     #print(msg)
     # check for repeating blocks
@@ -128,9 +133,6 @@ for i in range(100):
 # we get 'role=admin' = (D(C2) xor C1) xor mask
 # so we basically want to xor C1 with the mask
 # /# 
-
-def xor_bytes(a, b):
-    return bytes(x ^ y for x, y in zip(a, b))
 
 # this is an example token generated from my login
 new_token = "b55dd1cc46a08caf50950e295ca1eff85ace0d3db32dda85ff7b9868e2e8c54650205b3a6539299000fb871d6acaa54f"
@@ -212,4 +214,5 @@ f = open("Lab2.TaskIII.A.txt", "r")
 
 text = f.read()
 print(cbc_decrypt(text, b'MIND ON MY MONEY'))
+
 
