@@ -49,8 +49,8 @@ def unpad(msg):
 
 # Testing pad and unpad
 t = pad(b'123456781234567812345678123412')
-print(t)
-print(unpad(t))
+#print(t)
+#print(unpad(t))
 
 ### Task II: ECB Mode
 
@@ -84,16 +84,16 @@ def ecb_decrypt(msg, key):
     return final
 
 # Testing ECB Encrypt:
-print(ecb_encrypt(b'1234567890ab', b'1234567890abcdef'))
+#print(ecb_encrypt(b'1234567890ab', b'1234567890abcdef'))
 
 # Testing ECB Decrypt:
 f = open("Lab2.TaskII.A.txt", "r")
 text = f.read()
-print(ecb_decrypt(text, b'CALIFORNIA LOVE!'))
+#print(ecb_decrypt(text, b'CALIFORNIA LOVE!'))
 
 # Identify ECB Mode
 
-def is_ecb(msg):
+def is_ecb(msg,):
     #print(msg)
     # check for repeating blocks
     # each block is 16 bytes, so separate into 16s
@@ -101,9 +101,9 @@ def is_ecb(msg):
     # if not, move on
     k = 16
     after_header = 54
-    chunks = [msg[i:i+k] for i in range(after_header, len(msg), k)]
-    for i in range(len(chunks)):
-        if (chunks[i] in chunks[i + 1:]):
+    blocks = [msg[i:i+k] for i in range(after_header, len(msg), k)]
+    for i in range(len(blocks)):
+        if (blocks[i] in blocks[i + 1:]):
             return msg
     return None
 
@@ -116,12 +116,19 @@ for i in range(100):
         with open("TaskII.B.image.png", "wb") as binary_file:
             binary_file.write(byte_text)
 
-
-
-
-
 # ECB Cookies
 
+user_madmin = "fb0dfedc78da2ba160c87a5051721233f09a552e94d6615bad3ea0e5818016ac"
+
+def ecb_cookies():
+    k = 16
+    example_token = "e62a2b9d87acab2c7972253f1976f37e1061ad4e6d65f79950d75b2c2d11f038"
+    in_hex = hex_to_bytes(example_token)
+    # in_hex[0:3] == "user", last 4 same
+    blocks = [in_hex[i:i+k] for i in range(0, len(in_hex), k)]
+    return blocks
+
+print("cookie", ecb_cookies())
 #/  
 # So assuming that the "role=user" is in the Plaintext block 2,
 # we get that through P2 = D(C2) xor C1
@@ -216,15 +223,67 @@ def cbc_decrypt(ct, key):
     
 
 # Testing CBC Encrypt
-print(base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')))
+#print(base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')))
 
 # Testing CBC Decrypt
-print(cbc_decrypt(base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')),
-                  b'aesEncryptionKey'))
+#print(cbc_decrypt(base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')),
+#                  b'aesEncryptionKey'))
 
 f = open("Lab2.TaskIII.A.txt", "r")
 
 text = f.read()
 print(cbc_decrypt(text, b'MIND ON MY MONEY'))
 
+# CBC Cookies
+
+#/  
+# So assuming that the "role=user" is in the Plaintext block 2,
+# we get that through P2 = D(C2) xor C1
+# and we want to change C1 so that when we xor it we get "role=admin"
+# if we xor 'user' and 'admin' we get a mask
+# because of how xor logic works, doing 'user' xor mask gives us 'admin'
+# and at a basic level, P2 = 'role=user' = D(C2) xor C1
+# plugging this into the 'role=admin' = 'role=user' xor mask
+# we get 'role=admin' = (D(C2) xor C1) xor mask
+# so we basically want to xor C1 with the mask
+# /# 
+
+# user=USERNAMEBBB|BBBBBBBBBB&uid=2|&role=ROLE
+# USERNAMEBB&BBBBBBBB
+# USERNAMEBBBBBBBBBBBBB
+
+# this is an example token generated from my login
+new_token = "0044eb960fb4aa06eb045f881e0120d18594446d9689aed28b540f813009ded3c74cfd4c79bb47af505fc4627555f2e26667079a02113f9ffbddf62160a13581"
+
+new_auth = bytes.fromhex(new_token)
+
+# break it into blocks
+blocks = [new_auth[i:i + 16] for i in range(0, len(new_auth), 16)]
+print(blocks)
+# get the mask
+mask = xor_bytes(b'user', b'admin')
+
+# make the block we want a mutable byte array 
+mod_block = bytearray(blocks[2])
+second_mod_block = bytearray(blocks[0])
+# last_symbol = xor_bytes(second_mod_block[-1], b'B')
+
+
+second_mod_block[-1] ^= ord('B')
+second_mod_block[-1] ^= ord('&')
+blocks[0] = bytes(second_mod_block)
+
+
+# Apply the mask - I think we start at index 9 but not sure...
+for i in range(len(mask)):
+    mod_block[i + 6] ^= mask[i]
+
+# Replace the block
+blocks[2] = bytes(mod_block)
+
+modified_cookie = b"".join(blocks)
+
+modified_cookie_hex = modified_cookie.hex()
+
+print(f"Modified Cookie: {modified_cookie_hex}")
 
