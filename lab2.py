@@ -119,6 +119,7 @@ for i in range(100):
 # ECB Cookies
 
 user_madmin = "fb0dfedc78da2ba160c87a5051721233f09a552e94d6615bad3ea0e5818016ac"
+print("here", hex_to_bytes(user_madmin))
 
 def ecb_cookies():
     k = 16
@@ -129,44 +130,6 @@ def ecb_cookies():
     return blocks
 
 print("cookie", ecb_cookies())
-#/  
-# So assuming that the "role=user" is in the Plaintext block 2,
-# we get that through P2 = D(C2) xor C1
-# and we want to change C1 so that when we xor it we get "role=admin"
-# if we xor 'user' and 'admin' we get a mask
-# because of how xor logic works, doing 'user' xor mask gives us 'admin'
-# and at a basic level, P2 = 'role=user' = D(C2) xor C1
-# plugging this into the 'role=admin' = 'role=user' xor mask
-# we get 'role=admin' = (D(C2) xor C1) xor mask
-# so we basically want to xor C1 with the mask
-# /# 
-
-# this is an example token generated from my login
-new_token = "b55dd1cc46a08caf50950e295ca1eff85ace0d3db32dda85ff7b9868e2e8c54650205b3a6539299000fb871d6acaa54f"
-
-new_auth = bytes.fromhex(new_token)
-
-# break it into blocks
-blocks = [new_auth[i:i + 16] for i in range(0, len(new_auth), 16)]
-
-# get the mask
-mask = xor_bytes(b'user', b'admin')
-
-# make the block we want a mutable byte array 
-mod_block = bytearray(blocks[0])
-
-# Apply the mask - I think we start at index 9 but not sure...
-for i in range(len(mask)):
-    mod_block[9 + i] ^= mask[i]
-
-# Replace the block
-blocks[0] = bytes(mod_block)
-
-modified_cookie = b"".join(blocks)
-
-modified_cookie_hex = modified_cookie.hex()
-
-print(f"Modified Cookie: {modified_cookie_hex}")
 
 ### Task III: CBC Mode
 # takes an arbitrary length plaintext, 
