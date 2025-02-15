@@ -4,6 +4,7 @@ import datetime
 import time
 import random
 from Crypto.Cipher import AES
+import os
 
 # Tyler Brady and Madeline Park, Lab 2
 
@@ -200,37 +201,53 @@ print(cbc_decrypt(text, b'MIND ON MY MONEY'))
 # /# 
 
 # user=USERNAMEBBB|BBBBBBBBBB&uid=2|&role=ROLE
+# user=12345&uid=2&role=ROLE
+# user=1234512345&uid=3&role=user\x01
+# user=12312312312&uid=1&role=user
+# user=FUCKFUCKFF|&uid=3&role=admin\x00\x00\x00\x00\x05
+# user=USERNAMEBB&uid=4&role=admin\x01
 # USERNAMEBB&BBBBBBBB
+# ÅÆ
+
 # USERNAMEBBBBBBBBBBBBB
 
-# this is an example token generated from my login
-new_token = "0044eb960fb4aa06eb045f881e0120d18594446d9689aed28b540f813009ded3c74cfd4c79bb47af505fc4627555f2e26667079a02113f9ffbddf62160a13581"
+# Grab the token from logging in
+new_token = "c46ae68102cfa19b4051b70f8d36e13ea866c305aa6bed2cf880e250739950451da546874cd0b64b88a07548aaf1ff01"
 
+# Convert to bytes
 new_auth = bytes.fromhex(new_token)
 
-# break it into blocks
+# Break it into blocks
 blocks = [new_auth[i:i + 16] for i in range(0, len(new_auth), 16)]
-print(blocks)
-# get the mask
-mask = xor_bytes(b'user', b'admin')
 
-# make the block we want a mutable byte array 
+# Create a duplicate of the first block as a dummy block 
+dummy = bytes(blocks[1])
+
+# Insert the dummy block
+blocks.insert(2, dummy)
+for i, block in enumerate(blocks):
+    print(f"\nBlock {i}: {block.hex()} ({block})\n")
+
+
+# Get the mask to change 'user' to 'admin'
+mask = xor_bytes(b'user\x00', b'admin')
+
+
+# Make the block we want a mutable byte array 
 mod_block = bytearray(blocks[2])
-second_mod_block = bytearray(blocks[0])
-# last_symbol = xor_bytes(second_mod_block[-1], b'B')
 
+# 'user' is one character shorter than 'admin' so we need to adjust padding
+# Normally the padding would have 0x06 at the end but we need it to be 0x05 now
+# XOR 0x06 to zero it out then XOR 0x05 to accomodate the longer string
+mod_block[-1] ^= 0x06 ^ 0x05
 
-second_mod_block[-1] ^= ord('B')
-second_mod_block[-1] ^= ord('&')
-blocks[0] = bytes(second_mod_block)
-
-
-# Apply the mask - I think we start at index 9 but not sure...
+# Apply the mask, skipping the '&role=' part
 for i in range(len(mask)):
     mod_block[i + 6] ^= mask[i]
 
 # Replace the block
 blocks[2] = bytes(mod_block)
+
 
 modified_cookie = b"".join(blocks)
 
