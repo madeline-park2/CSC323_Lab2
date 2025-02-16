@@ -205,7 +205,7 @@ print(cbc_decrypt(text, b'MIND ON MY MONEY'))
 # USERNAMEBBBBBBBBBBBBB
 
 # Grab the token from logging in
-new_token = "c46ae68102cfa19b4051b70f8d36e13ea866c305aa6bed2cf880e250739950451da546874cd0b64b88a07548aaf1ff01"
+new_token = "a3f3a6c2364f7203776d65eb035f1ad9fa6956290189603f127a2c8b74a56c46025f264a129533fdd59cbbf3b5f9dceb3ebf96a3225b96ed4221dddb6138472b"
 
 # Convert to bytes
 new_auth = bytes.fromhex(new_token)
@@ -248,3 +248,82 @@ modified_cookie_hex = modified_cookie.hex()
 
 print(f"Modified Cookie: {modified_cookie_hex}")
 
+# ---------------------------------
+print("------------------------------------\n\n")
+# user=ZZZZZZZZZZZ|admin&uid=1&role|=user
+
+
+# user=ZZZZZZZZZZZ|admin00000000000|0000&uid=1&role=|user
+# ZZZZZZZZZZZadmin000000000000000
+# put block3[1] into block1[3] then put block2[3] into block1[4]
+
+# user=ZZZZZZZZZZZ|admin00000000000|&uid=1&role=user|
+# ZZZZZZZZZZZadmin00000000000
+
+# user=ZZZZZZZZZZZ|admin&uid=1&role|=user
+# ZZZZZZZZZZZadmin
+
+
+
+
+# user=ZZZZZZZZZZZ|admin&uid=1&role|=user
+
+# user=ZZZZZZZZZZZ|admin           |0000&uid=1&role=|user
+# user=ZZZZZZZZZZZ|admin&uid=1&role|=user
+
+# user=ZZZZZZZZZZZ|admin&uid=1&role|=user
+
+# user=ZZZZZZZZZZZ|admin\0\0\0\0\0\0\0\0\0\0\0|0000&uid=1&role=|user
+
+
+# user=ZZZZZZZZZZZ|admin00000000000|00000&uid=1&role|=user
+
+# user=ZZZZZZZZZZZ|admin00000000000|0000&uid=1&role=|user
+# user=ZZZZZZZZZZZ|admin00000000000|0000000000000000|&uid=1&role=user|
+
+
+# user=ZZZZZZZZZZZ|admin00000000000|&uid=1&role=user|
+# user=&uid=1&role|=admin&uid=1&role|=user
+
+# user=tylerrrrrZZ|ZRRR&uid=2&role=|user
+
+# Token 1 should have its last block start with 'user'
+# Token 2 provides a full block of padding to tag onto the final cookie
+# Token 3 provides a block starting with 'admin' followed by a '&' delimiter
+admin_token = "c127dc277fdc0211538a9d20a19781deadfb2153896aec039386a1eccfbdee032204c48b1bb6013a661b56544322b14aed1999e24e61c0142e1fe9818e076675"
+other_token = "c127dc277fdc0211538a9d20a19781deadfb2153896aec039386a1eccfbdee0324dc324ac85a000bfd52f31a5dbe495072c7e3c997116ab117d012f71398c87e"
+last_token = "c127dc277fdc0211538a9d20a19781de0fb74747a338d154af143ea30c3f02fd20bcd248fb041a61767df322b7fd1c4f"
+
+# Convert to bytes
+admin_bytes = bytes.fromhex(admin_token)
+other_bytes = bytes.fromhex(other_token)
+last_bytes = bytes.fromhex(last_token)
+
+# Break it into blocks
+admin_blocks = [admin_bytes[i:i + 16] for i in range(0, len(admin_bytes), 16)]
+other_blocks = [other_bytes[i:i + 16] for i in range(0, len(other_bytes), 16)]
+last_blocks = [last_bytes[i:i + 16] for i in range(0, len(last_bytes), 16)]
+
+for i, block in enumerate(admin_blocks):
+    print(f"\nBlock {i}: {block.hex()} ({block})\n")
+
+
+# Grab the important blocks we need 
+first = bytearray(last_blocks[1]) # admin&...
+second = bytearray(other_blocks[3]) # padding
+
+# Arrange them so that the final cookie is in the form:
+# | ... role=|admin& ... | pure padding
+admin_blocks[3] = bytes(first)
+admin_blocks.append(bytes(second))
+
+
+mod_cookie = b"".join(admin_blocks)
+
+mod_cookie_hex = mod_cookie.hex()
+
+print(f"Modified Cookie ECB: {mod_cookie_hex}")
+
+# user=tylerrrrrZZ|ZRRR&uid=2&role=|admin&uid=1&role|
+# need a padding of 11
+# user=ZZZZZZZZZZZ|admin00000000000|0000&uid=2&role=|admin00000000000
