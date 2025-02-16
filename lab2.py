@@ -1,17 +1,9 @@
 import base64
-import binascii
-import datetime
-import time
-import random
 from Crypto.Cipher import AES
-import os
 
 # Tyler Brady and Madeline Park, Lab 2
 
 ### All Helper Functions
-
-def hex_to_bytes(h):
-    return binascii.unhexlify(h)
 
 def xor_bytes(a, b):
     return bytes(x ^ y for x, y in zip(a, b))
@@ -112,27 +104,37 @@ def is_ecb(msg,):
 f = open("Lab2.TaskII.B.txt", "r")
 for i in range(100):
     text = f.readline().strip()
-    byte_text = hex_to_bytes(text)
+    byte_text = bytes.fromhex(text)
     if (is_ecb(byte_text) is not None):
         with open("TaskII.B.image.png", "wb") as binary_file:
             binary_file.write(byte_text)
 
 # ECB Cookies
 
-user_madmin = "fb0dfedc78da2ba160c87a5051721233f09a552e94d6615bad3ea0e5818016ac"
-print("here", hex_to_bytes(user_madmin))
+# cookie: user=00000000000admin0000000000000&uid=501&role=user
+# admin + user are in own blocks, at start of block
+# paste admin block on end where user block is
+# then fix padding: user would be \x0C but admin would be \x0B
 
-def ecb_cookies():
-    k = 16
-    example_token = "e62a2b9d87acab2c7972253f1976f37e1061ad4e6d65f79950d75b2c2d11f038"
-    in_hex = hex_to_bytes(example_token)
-    # in_hex[0:3] == "user", last 4 same
-    blocks = [in_hex[i:i+k] for i in range(0, len(in_hex), k)]
-    return blocks
 
-print("cookie", ecb_cookies())
+c = "348cb8d538c470a8e81dd8f38934a74d4deb81123f86cc77d5f01a01a6b66bef3bea9e08bf8d59376348d78bca0bedb0c8ee374d6a294bfa5890872c4a7e05f7"
+in_hex = bytes.fromhex(c)
+blocks = [in_hex[i:i+16] for i in range(0, len(in_hex), 16)]
+# second block = "admin00000000000"
+# last block = "user" and proper padding, ending with \x0C
+last_block = bytearray(blocks[3])
+print(last_block)
+last_block[0:4] = blocks[1][0:4]
+print(last_block, blocks[1])
+last_block[-1] ^= 0x0C ^ 0x0B
+print(last_block)
+blocks[3] = last_block
+new_cookie = b"".join(blocks)
+print(new_cookie.hex())
+
 
 ### Task III: CBC Mode
+
 # takes an arbitrary length plaintext, 
 # a key, and an initialization vector,
 # then pads the message
@@ -175,11 +177,11 @@ def cbc_decrypt(ct, key):
     
 
 # Testing CBC Encrypt
-#print(base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')))
+print(base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')))
 
 # Testing CBC Decrypt
-#print(cbc_decrypt(base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')),
-#                  b'aesEncryptionKey'))
+print(cbc_decrypt(base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')),
+                  b'aesEncryptionKey'))
 
 f = open("Lab2.TaskIII.A.txt", "r")
 
@@ -199,15 +201,6 @@ print(cbc_decrypt(text, b'MIND ON MY MONEY'))
 # we get 'role=admin' = (D(C2) xor C1) xor mask
 # so we basically want to xor C1 with the mask
 # /# 
-
-# user=USERNAMEBBB|BBBBBBBBBB&uid=2|&role=ROLE
-# user=12345&uid=2&role=ROLE
-# user=1234512345&uid=3&role=user\x01
-# user=12312312312&uid=1&role=user
-# user=FUCKFUCKFF|&uid=3&role=admin\x00\x00\x00\x00\x05
-# user=USERNAMEBB&uid=4&role=admin\x01
-# USERNAMEBB&BBBBBBBB
-# ÅÆ
 
 # USERNAMEBBBBBBBBBBBBB
 
