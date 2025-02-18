@@ -42,8 +42,8 @@ def unpad(msg):
 
 # Testing pad and unpad
 t = pad(b'123456781234567812345678123412')
-#print(t)
-#print(unpad(t))
+print("pad:", t)
+print("unpad:", unpad(t))
 
 ### Task II: ECB Mode
 
@@ -77,12 +77,12 @@ def ecb_decrypt(msg, key):
     return final
 
 # Testing ECB Encrypt:
-#print(ecb_encrypt(b'1234567890ab', b'1234567890abcdef'))
+print("ECB Encrypt:", ecb_encrypt(b'1234567890ab', b'1234567890abcdef'))
 
 # Testing ECB Decrypt:
 f = open("Lab2.TaskII.A.txt", "r")
 text = f.read()
-#print(ecb_decrypt(text, b'CALIFORNIA LOVE!'))
+print("ECB Decrypt", ecb_decrypt(text, b'CALIFORNIA LOVE!'))
 
 # Identify ECB Mode
 
@@ -110,28 +110,83 @@ for i in range(100):
             binary_file.write(byte_text)
 
 # ECB Cookies
-
-# cookie: user=00000000000admin0000000000000&uid=501&role=user
-# admin + user are in own blocks, at start of block
-# paste admin block on end where user block is
-# then fix padding: user would be \x0C but admin would be \x0B
+# user=ZZZZZZZZZZZ|admin&uid=1&role|=user
 
 
-c = "348cb8d538c470a8e81dd8f38934a74d4deb81123f86cc77d5f01a01a6b66bef3bea9e08bf8d59376348d78bca0bedb0c8ee374d6a294bfa5890872c4a7e05f7"
-in_hex = bytes.fromhex(c)
-blocks = [in_hex[i:i+16] for i in range(0, len(in_hex), 16)]
-# second block = "admin00000000000"
-# last block = "user" and proper padding, ending with \x0C
-last_block = bytearray(blocks[3])
-print(last_block)
-last_block[0:4] = blocks[1][0:4]
-print(last_block, blocks[1])
-last_block[-1] ^= 0x0C ^ 0x0B
-print(last_block)
-blocks[3] = last_block
-new_cookie = b"".join(blocks)
-print(new_cookie.hex())
+# user=ZZZZZZZZZZZ|admin00000000000|0000&uid=1&role=|user
+# ZZZZZZZZZZZadmin000000000000000
+# put block3[1] into block1[3] then put block2[3] into block1[4]
 
+# user=ZZZZZZZZZZZ|admin00000000000|&uid=1&role=user|
+# ZZZZZZZZZZZadmin00000000000
+
+# user=ZZZZZZZZZZZ|admin&uid=1&role|=user
+# ZZZZZZZZZZZadmin
+
+# user=ZZZZZZZZZZZ|admin&uid=1&role|=user
+
+# user=ZZZZZZZZZZZ|admin           |0000&uid=1&role=|user
+# user=ZZZZZZZZZZZ|admin&uid=1&role|=user
+
+# user=ZZZZZZZZZZZ|admin&uid=1&role|=user
+
+# user=ZZZZZZZZZZZ|admin\0\0\0\0\0\0\0\0\0\0\0|0000&uid=1&role=|user
+
+
+# user=ZZZZZZZZZZZ|admin00000000000|00000&uid=1&role|=user
+
+# user=ZZZZZZZZZZZ|admin00000000000|0000&uid=1&role=|user
+# user=ZZZZZZZZZZZ|admin00000000000|0000000000000000|&uid=1&role=user|
+
+
+# user=ZZZZZZZZZZZ|admin00000000000|&uid=1&role=user|
+# user=&uid=1&role|=admin&uid=1&role|=user
+
+# user=tylerrrrrZZ|ZRRR&uid=2&role=|user
+
+# Token 1 should have its last block start with 'user'
+# Token 2 provides a full block of padding to tag onto the final cookie
+# Token 3 provides a block starting with 'admin' followed by a '&' delimiter
+admin_token = "c127dc277fdc0211538a9d20a19781deadfb2153896aec039386a1eccfbdee032204c48b1bb6013a661b56544322b14aed1999e24e61c0142e1fe9818e076675"
+other_token = "c127dc277fdc0211538a9d20a19781deadfb2153896aec039386a1eccfbdee0324dc324ac85a000bfd52f31a5dbe495072c7e3c997116ab117d012f71398c87e"
+last_token = "c127dc277fdc0211538a9d20a19781de0fb74747a338d154af143ea30c3f02fd20bcd248fb041a61767df322b7fd1c4f"
+
+# Convert to bytes
+admin_bytes = bytes.fromhex(admin_token)
+other_bytes = bytes.fromhex(other_token)
+last_bytes = bytes.fromhex(last_token)
+
+# Break it into blocks
+admin_blocks = [admin_bytes[i:i + 16] for i in range(0, len(admin_bytes), 16)]
+other_blocks = [other_bytes[i:i + 16] for i in range(0, len(other_bytes), 16)]
+last_blocks = [last_bytes[i:i + 16] for i in range(0, len(last_bytes), 16)]
+
+for i, block in enumerate(admin_blocks):
+    print(f"\nBlock {i}: {block.hex()} ({block})\n")
+
+
+# Grab the important blocks we need 
+first = bytearray(last_blocks[1]) # admin&...
+second = bytearray(other_blocks[3]) # padding
+
+# Arrange them so that the final cookie is in the form:
+# | ... role=|admin& ... | pure padding
+admin_blocks[3] = bytes(first)
+admin_blocks.append(bytes(second))
+
+
+mod_cookie = b"".join(admin_blocks)
+
+mod_cookie_hex = mod_cookie.hex()
+
+print(f"Modified Cookie ECB: {mod_cookie_hex}")
+
+# ---------------------------------
+print("------------------------------------\n\n")
+
+# user=tylerrrrrZZ|ZRRR&uid=2&role=|admin&uid=1&role|
+# need a padding of 11
+# user=ZZZZZZZZZZZ|admin00000000000|0000&uid=2&role=|admin00000000000
 
 ### Task III: CBC Mode
 
@@ -177,10 +232,10 @@ def cbc_decrypt(ct, key):
     
 
 # Testing CBC Encrypt
-print(base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')))
+print("CBC Encrypt:", base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')))
 
 # Testing CBC Decrypt
-print(cbc_decrypt(base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')),
+print("CBC Decrypt:", cbc_decrypt(base64.b64encode(cbc_encrypt(b'hello', b'aesEncryptionKey', b'thisisanivplease')),
                   b'aesEncryptionKey'))
 
 f = open("Lab2.TaskIII.A.txt", "r")
@@ -248,82 +303,3 @@ modified_cookie_hex = modified_cookie.hex()
 
 print(f"Modified Cookie: {modified_cookie_hex}")
 
-# ---------------------------------
-print("------------------------------------\n\n")
-# user=ZZZZZZZZZZZ|admin&uid=1&role|=user
-
-
-# user=ZZZZZZZZZZZ|admin00000000000|0000&uid=1&role=|user
-# ZZZZZZZZZZZadmin000000000000000
-# put block3[1] into block1[3] then put block2[3] into block1[4]
-
-# user=ZZZZZZZZZZZ|admin00000000000|&uid=1&role=user|
-# ZZZZZZZZZZZadmin00000000000
-
-# user=ZZZZZZZZZZZ|admin&uid=1&role|=user
-# ZZZZZZZZZZZadmin
-
-
-
-
-# user=ZZZZZZZZZZZ|admin&uid=1&role|=user
-
-# user=ZZZZZZZZZZZ|admin           |0000&uid=1&role=|user
-# user=ZZZZZZZZZZZ|admin&uid=1&role|=user
-
-# user=ZZZZZZZZZZZ|admin&uid=1&role|=user
-
-# user=ZZZZZZZZZZZ|admin\0\0\0\0\0\0\0\0\0\0\0|0000&uid=1&role=|user
-
-
-# user=ZZZZZZZZZZZ|admin00000000000|00000&uid=1&role|=user
-
-# user=ZZZZZZZZZZZ|admin00000000000|0000&uid=1&role=|user
-# user=ZZZZZZZZZZZ|admin00000000000|0000000000000000|&uid=1&role=user|
-
-
-# user=ZZZZZZZZZZZ|admin00000000000|&uid=1&role=user|
-# user=&uid=1&role|=admin&uid=1&role|=user
-
-# user=tylerrrrrZZ|ZRRR&uid=2&role=|user
-
-# Token 1 should have its last block start with 'user'
-# Token 2 provides a full block of padding to tag onto the final cookie
-# Token 3 provides a block starting with 'admin' followed by a '&' delimiter
-admin_token = "c127dc277fdc0211538a9d20a19781deadfb2153896aec039386a1eccfbdee032204c48b1bb6013a661b56544322b14aed1999e24e61c0142e1fe9818e076675"
-other_token = "c127dc277fdc0211538a9d20a19781deadfb2153896aec039386a1eccfbdee0324dc324ac85a000bfd52f31a5dbe495072c7e3c997116ab117d012f71398c87e"
-last_token = "c127dc277fdc0211538a9d20a19781de0fb74747a338d154af143ea30c3f02fd20bcd248fb041a61767df322b7fd1c4f"
-
-# Convert to bytes
-admin_bytes = bytes.fromhex(admin_token)
-other_bytes = bytes.fromhex(other_token)
-last_bytes = bytes.fromhex(last_token)
-
-# Break it into blocks
-admin_blocks = [admin_bytes[i:i + 16] for i in range(0, len(admin_bytes), 16)]
-other_blocks = [other_bytes[i:i + 16] for i in range(0, len(other_bytes), 16)]
-last_blocks = [last_bytes[i:i + 16] for i in range(0, len(last_bytes), 16)]
-
-for i, block in enumerate(admin_blocks):
-    print(f"\nBlock {i}: {block.hex()} ({block})\n")
-
-
-# Grab the important blocks we need 
-first = bytearray(last_blocks[1]) # admin&...
-second = bytearray(other_blocks[3]) # padding
-
-# Arrange them so that the final cookie is in the form:
-# | ... role=|admin& ... | pure padding
-admin_blocks[3] = bytes(first)
-admin_blocks.append(bytes(second))
-
-
-mod_cookie = b"".join(admin_blocks)
-
-mod_cookie_hex = mod_cookie.hex()
-
-print(f"Modified Cookie ECB: {mod_cookie_hex}")
-
-# user=tylerrrrrZZ|ZRRR&uid=2&role=|admin&uid=1&role|
-# need a padding of 11
-# user=ZZZZZZZZZZZ|admin00000000000|0000&uid=2&role=|admin00000000000
